@@ -1,0 +1,117 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User account profile with custom local reset question references",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Equal to the Firebase Auth uid" },
+        "email": { "type": "string", "description": "The user's registered email address" },
+        "passwordHash": { "type": "string", "description": "The backup credentials representation" },
+        "securityQuestion": { "type": "string", "description": "Security question for reset flows" },
+        "securityAnswer": { "type": "string", "description": "Secure response to question" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "createdAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Category item belonging to a workspace user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique category key" },
+        "userId": { "type": "string", "description": "ID of user owning this category" },
+        "name": { "type": "string", "description": "The custom defined category label" },
+        "type": { "type": "string", "enum": ["income", "expense"], "description": "Classification group" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name", "type", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A single financial credit or debit transaction ledger record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "categoryName": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "description": "Format YYYY-MM-DD" },
+        "description": { "type": "string" },
+        "transactionType": { "type": "string", "enum": ["income", "expense"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "categoryId", "amount", "date", "description", "transactionType", "createdAt"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Monthly spending target limit defined for a specific category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "monthlyLimit": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "categoryId", "monthlyLimit", "createdAt"]
+    },
+    "SavingsGoal": {
+      "title": "SavingsGoal",
+      "description": "A progress tracking goal mapped to save money for an occasion or need",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "targetAmount": { "type": "number" },
+        "currentAmount": { "type": "number" },
+        "categoryId": { "type": "string" },
+        "deadline": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name", "targetAmount", "currentAmount", "createdAt"]
+    },
+    "SupportMessage": {
+      "title": "SupportMessage",
+      "description": "Customer support or inquiry tickets filled by user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "category": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "category", "subject", "message", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Private collection of user identities and auth settings"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "A database-agnostic classification system for credit and debit items"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Secure financial ledger entries containing currency values"
+    },
+    "/budgets/{budgetId}": {
+      "schema": "Budget",
+      "description": "Target metrics to limit user spending by category"
+    },
+    "/savings/{savingsId}": {
+      "schema": "SavingsGoal",
+      "description": "Secure goals to track user savings progress"
+    },
+    "/support_messages/{messageId}": {
+      "schema": "SupportMessage",
+      "description": "Interactive customer support or inquiry tickets filled by user"
+    }
+  }
+}

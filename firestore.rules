@@ -1,0 +1,143 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    // ==========================================
+    // ENTITY VALIDATION FUNCTIONS
+    // ==========================================
+    function isValidUser(user) {
+      return user.id is string && user.id.size() <= 128
+          && user.email is string && user.email.size() <= 256
+          && (!('securityQuestion' in user) || user.securityQuestion == null || (user.securityQuestion is string && user.securityQuestion.size() <= 256))
+          && (!('securityAnswer' in user) || user.securityAnswer == null || (user.securityAnswer is string && user.securityAnswer.size() <= 256))
+          && user.createdAt is string && user.createdAt.size() <= 64;
+    }
+
+    function isValidCategory(cat) {
+      return cat.id is string && cat.id.size() <= 128
+          && cat.userId == request.auth.uid
+          && cat.name is string && cat.name.size() <= 128
+          && cat.type is string && (cat.type == 'income' || cat.type == 'expense')
+          && cat.createdAt is string && cat.createdAt.size() <= 64;
+    }
+
+    function isValidTransaction(tx) {
+      return tx.id is string && tx.id.size() <= 128
+          && tx.userId == request.auth.uid
+          && tx.categoryId is string && tx.categoryId.size() <= 128
+          && (!('categoryName' in tx) || tx.categoryName == null || (tx.categoryName is string && tx.categoryName.size() <= 128))
+          && (tx.amount is int || tx.amount is float)
+          && tx.date is string && tx.date.size() <= 32
+          && tx.description is string && tx.description.size() <= 256
+          && tx.transactionType is string && (tx.transactionType == 'income' || tx.transactionType == 'expense')
+          && tx.createdAt is string && tx.createdAt.size() <= 64;
+    }
+
+    function isValidBudget(b) {
+      return b.id is string && b.id.size() <= 128
+          && b.userId == request.auth.uid
+          && b.categoryId is string && b.categoryId.size() <= 128
+          && (b.monthlyLimit is int || b.monthlyLimit is float)
+          && b.createdAt is string && b.createdAt.size() <= 64;
+    }
+
+    function isValidSavingsGoal(g) {
+      return g.id is string && g.id.size() <= 128
+          && g.userId == request.auth.uid
+          && g.name is string && g.name.size() <= 128
+          && (g.targetAmount is int || g.targetAmount is float)
+          && (g.currentAmount is int || g.currentAmount is float)
+          && (!('categoryId' in g) || g.categoryId == null || (g.categoryId is string && g.categoryId.size() <= 128))
+          && (!('deadline' in g) || g.deadline == null || (g.deadline is string && g.deadline.size() <= 64))
+          && g.createdAt is string && g.createdAt.size() <= 64;
+    }
+
+    function isValidSupportMessage(m) {
+      return m.id is string && m.id.size() <= 128
+          && m.userId == request.auth.uid
+          && m.category is string && m.category.size() <= 128
+          && m.subject is string && m.subject.size() <= 256
+          && m.message is string && m.message.size() <= 2048
+          && m.createdAt is string && m.createdAt.size() <= 64;
+    }
+
+    // ==========================================
+    // GLOBAL SAFETY NET (DEFAULT DENY)
+    // ==========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==========================================
+    // COLLECTIONS
+    // ==========================================
+
+    // USERS COLLECTION
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow delete: if false;
+      // REMOVED: "allow list" rule to prevent data-harvesting of your user directory.
+    }
+
+    // CATEGORIES COLLECTION
+    match /categories/{categoryId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(categoryId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(categoryId) && isValidCategory(request.resource.data);
+      allow update: if isSignedIn() && isValidId(categoryId) && resource.data.userId == request.auth.uid && isValidCategory(request.resource.data);
+      allow delete: if isSignedIn() && isValidId(categoryId) && resource.data.userId == request.auth.uid;
+    }
+
+    // TRANSACTIONS COLLECTION
+    match /transactions/{transactionId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(transactionId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(transactionId) && isValidTransaction(request.resource.data);
+      allow update: if isSignedIn() && isValidId(transactionId) && resource.data.userId == request.auth.uid && isValidTransaction(request.resource.data);
+      allow delete: if isSignedIn() && isValidId(transactionId) && resource.data.userId == request.auth.uid;
+    }
+
+    // BUDGETS COLLECTION
+    match /budgets/{budgetId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(budgetId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(budgetId) && isValidBudget(request.resource.data);
+      allow update: if isSignedIn() && isValidId(budgetId) && resource.data.userId == request.auth.uid && isValidBudget(request.resource.data);
+      allow delete: if isSignedIn() && isValidId(budgetId) && resource.data.userId == request.auth.uid;
+    }
+
+    // SAVINGS COLLECTION
+    match /savings/{savingsId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(savingsId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(savingsId) && isValidSavingsGoal(request.resource.data);
+      allow update: if isSignedIn() && isValidId(savingsId) && resource.data.userId == request.auth.uid && isValidSavingsGoal(request.resource.data);
+      allow delete: if isSignedIn() && isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // DIRECT SUPPORT MESSAGES COLLECTION
+    match /support_messages/{messageId} {
+      allow get: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid) && isValidId(messageId);
+      allow list: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(messageId) && isValidSupportMessage(request.resource.data);
+      allow update, delete: if false;
+    }
+  }
+}

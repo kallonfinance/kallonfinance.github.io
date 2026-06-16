@@ -1,0 +1,10 @@
+{
+  "projectId": "kallon-finance-tracker",
+  "appId": "1:358892439585:web:a2ae1c9161d4d5c305bb60",
+  "apiKey": "AIzaSyCshVmF5Nmz_TcseY_YQjileY4W0HYE6J0",
+  "authDomain": "kallon-finance-tracker.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "kallon-finance-tracker.firebasestorage.app",
+  "messagingSenderId": "358892439585",
+  "measurementId": "G-ZX4GNSD8KX"
+}

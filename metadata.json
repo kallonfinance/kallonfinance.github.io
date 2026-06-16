@@ -1,0 +1,8 @@
+{
+  "name": "Kallon FinanceTracker",
+  "description": "A modern and professional personal finance tracking application featuring dashboard analytics, income and expense management, budget tracking, and savings goals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
