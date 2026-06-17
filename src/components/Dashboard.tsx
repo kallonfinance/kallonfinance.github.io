@@ -146,7 +146,7 @@ export function Dashboard({ userId, darkMode, onNavigate, transactionsVersion, g
       )}
 
       {/* SUMMARY PANEL CARDS */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         {/* Total Income */}
         <div className={`rounded-2xl border p-5 transition-card ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'}`}>
           <div className="flex items-center justify-between gap-1 mb-2">
@@ -204,7 +204,7 @@ export function Dashboard({ userId, darkMode, onNavigate, transactionsVersion, g
         </div>
 
         {/* Transaction Count */}
-        <div className={`col-span-2 lg:col-span-1 rounded-2xl border p-5 transition-card ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'}`}>
+        <div className={`col-span-1 sm:col-span-2 lg:col-span-1 rounded-2xl border p-5 transition-card ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'}`}>
           <div className="flex items-center justify-between gap-1 mb-2">
             <span className="text-xs text-neutral-400 font-medium">Month Ledger Lines</span>
             <div className="rounded-xl bg-neutral-100 dark:bg-neutral-950 p-2 text-neutral-600 dark:text-neutral-400">

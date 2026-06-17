@@ -27,30 +27,17 @@ const CATEGORY_COLORS = [
 ];
 
 export function ExpenseTreemap({ expenses, currencySymbol, darkMode }: ExpenseTreemapProps) {
-  const [hoveredNode, setHoveredNode] = useState<{ name: string; amount: number; percentage: number; isDemo: boolean } | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<{ name: string; amount: number; percentage: number } | null>(null);
 
-  const isDemo = expenses.length === 0;
+  const isEmpty = expenses.length === 0;
 
   // Compute final dataset
   const data = useMemo(() => {
-    if (isDemo) {
-      return {
-        name: 'root',
-        children: [
-          { name: 'Housing (Demo)', amount: 1200 },
-          { name: 'Groceries (Demo)', amount: 480 },
-          { name: 'Dining Out (Demo)', amount: 320 },
-          { name: 'Transport (Demo)', amount: 200 },
-          { name: 'Entertainment (Demo)', amount: 150 },
-          { name: 'Utilities (Demo)', amount: 110 },
-        ],
-      };
-    }
     return {
       name: 'root',
       children: expenses,
     };
-  }, [expenses, isDemo]);
+  }, [expenses]);
 
   const totalExpenseSum = useMemo(() => {
     return data.children.reduce((sum, item) => sum + item.amount, 0);
@@ -58,6 +45,8 @@ export function ExpenseTreemap({ expenses, currencySymbol, darkMode }: ExpenseTr
 
   // Generate D3 Treemap layout metrics
   const leaves = useMemo(() => {
+    if (isEmpty) return [];
+    
     const rootNode = d3.hierarchy(data)
       .sum((d: any) => d.amount)
       .sort((a, b) => (b.value || 0) - (a.value || 0));
@@ -74,12 +63,45 @@ export function ExpenseTreemap({ expenses, currencySymbol, darkMode }: ExpenseTr
 
     treemapLayout(rootNode);
     return rootNode.leaves();
-  }, [data]);
+  }, [data, isEmpty]);
 
   // Color selection helper
   const getColor = (index: number) => {
     return CATEGORY_COLORS[index % CATEGORY_COLORS.length];
   };
+
+  if (isEmpty) {
+    return (
+      <div className={`rounded-2xl border p-6 flex flex-col justify-between transition-card min-h-[360px] ${
+        darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'
+      }`} id="expense-treemap-card">
+        
+        {/* Header Panel */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-4">
+          <div>
+            <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+              <LayoutGrid className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-sm font-semibold tracking-tight">Spending Density Treemap</span>
+            </h3>
+            <p className="text-xs text-neutral-400 mt-1 leading-normal">
+              Hierarchical tile map representing area size based on expense amount.
+            </p>
+          </div>
+        </div>
+
+        {/* Empty State Layout */}
+        <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+          <div className="mb-3.5 p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-100 dark:border-neutral-850/60 shadow-xs">
+            <LayoutGrid className="h-6 w-6 text-neutral-400 dark:text-neutral-500" />
+          </div>
+          <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">No Expense Data Recorded Yet</p>
+          <p className="text-xs text-neutral-400 max-w-[280px] mt-1 leading-relaxed">
+            Once you add expense transactions, this interactive treemap will compile your spending pattern density.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`rounded-2xl border p-6 flex flex-col justify-between transition-card ${
@@ -92,11 +114,6 @@ export function ExpenseTreemap({ expenses, currencySymbol, darkMode }: ExpenseTr
           <h3 className="font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
             <LayoutGrid className="h-4.5 w-4.5 text-indigo-600 dark:text-indigo-400" />
             <span className="text-sm font-semibold tracking-tight">Spending Density Treemap</span>
-            {isDemo && (
-              <span className="text-[9px] uppercase font-mono bg-neutral-100 dark:bg-neutral-950 text-neutral-400 px-2 py-0.5 rounded-md font-bold">
-                Demo Mode
-              </span>
-            )}
           </h3>
           <p className="text-xs text-neutral-400 mt-1 leading-normal">
             Hierarchical tile map representing area size based on expense amount.
@@ -153,7 +170,7 @@ export function ExpenseTreemap({ expenses, currencySymbol, darkMode }: ExpenseTr
               <g
                 key={categoryName}
                 transform={`translate(${d.x0}, ${d.y0})`}
-                onMouseEnter={() => setHoveredNode({ name: categoryName, amount, percentage, isDemo })}
+                onMouseEnter={() => setHoveredNode({ name: categoryName, amount, percentage })}
                 onMouseLeave={() => setHoveredNode(null)}
                 className="cursor-pointer group select-none"
               >

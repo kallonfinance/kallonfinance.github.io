@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { dbService } from '../db';
 import { SavingsGoal } from '../types';
 import { PiggyBank, Target, Calendar, Plus, Trash2, Edit3, CircleDollarSign, Check, X } from 'lucide-react';
+import { CustomDatePicker } from './CustomDatePicker';
 
 interface SavingsProps {
   userId: string;
@@ -307,8 +308,8 @@ export function Savings({ userId, darkMode, onGoalsChanged, currencySymbol }: Sa
 
       {/* RE-USABLE ADD/EDIT GOAL SCREEN DIALOG */}
       {showAddForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-fade-in">
-          <div className={`w-full max-w-md rounded-3xl border p-6 shadow-xl ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'}`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-fade-in md:pl-64">
+          <div className={`w-full max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar rounded-3xl border p-6 shadow-xl ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'}`}>
             <div className="flex items-center justify-between border-b pb-3 mb-4 border-neutral-100 dark:border-neutral-800">
               <h2 className="text-lg font-bold">
                 {editingGoal ? 'Amend Savings Structure' : 'New Savings Goal'}
@@ -362,15 +363,12 @@ export function Savings({ userId, darkMode, onGoalsChanged, currencySymbol }: Sa
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-1 font-mono">Target Date</label>
-                <div className="relative">
-                  <Calendar className="absolute top-2.5 left-3 h-4.5 w-4.5 text-neutral-400" />
-                  <input
-                    id="goal-date-input"
-                    type="date"
-                    required
+                <div>
+                  <CustomDatePicker
                     value={targetDate}
-                    onChange={(e) => setTargetDate(e.target.value)}
-                    className="w-full rounded-xl border py-2 pl-10 pr-4 text-sm bg-white text-neutral-900 dark:bg-neutral-950 dark:text-white dark:border-neutral-800 outline-none focus:border-indigo-500"
+                    onChange={(selectedDate) => setTargetDate(selectedDate)}
+                    placeholder="Choose target date"
+                    darkMode={darkMode}
                   />
                 </div>
               </div>

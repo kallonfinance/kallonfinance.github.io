@@ -9,6 +9,7 @@ import { Savings } from './components/Savings';
 import { Categories } from './components/Categories';
 import { Reports } from './components/Reports';
 import { Contact } from './components/Contact';
+import { LockScreen } from './components/LockScreen';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -26,6 +27,7 @@ import {
   X,
   Loader2,
   HelpCircle,
+  Lock,
 } from 'lucide-react';
 import logoImg from './assets/images/app_logo_1781644653866.jpg';
 
@@ -61,6 +63,38 @@ export default function App() {
 
   const [currency, setCurrency] = useState<string>('$');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [autoLockMinutes, setAutoLockMinutes] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      return Number(localStorage.getItem('kallon_autolock') || '0');
+    }
+    return 0;
+  });
+
+  // Track user inactivity to auto-lock session
+  useEffect(() => {
+    if (autoLockMinutes === 0 || !activeUser || isLocked) return;
+
+    let timeoutId: any;
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsLocked(true);
+      }, autoLockMinutes * 60 * 1000);
+    };
+
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    
+    events.forEach((event) => window.addEventListener(event, resetTimer));
+    
+    // Start initial timer
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach((event) => window.removeEventListener(event, resetTimer));
+    };
+  }, [autoLockMinutes, activeUser, isLocked]);
 
   // Reactive view sync keys
   const [transactionsVersion, setTransactionsVersion] = useState(0);
@@ -131,15 +165,24 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Sync dark mode selection to the root class list for Tailwind v4
+  // Sync dark mode selection to the root class list for Tailwind v4 and update mobile theme color!
   useEffect(() => {
     const root = window.document.documentElement;
+    let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (!themeColorMeta) {
+      themeColorMeta = document.createElement('meta');
+      themeColorMeta.setAttribute('name', 'theme-color');
+      document.head.appendChild(themeColorMeta);
+    }
+
     if (darkMode) {
       root.classList.add('dark');
       localStorage.setItem('kallon_theme', 'dark');
+      themeColorMeta.setAttribute('content', '#0a0a0a'); // Matches neutral-950 perfectly
     } else {
       root.classList.remove('dark');
       localStorage.setItem('kallon_theme', 'light');
+      themeColorMeta.setAttribute('content', '#fafafa'); // Matches neutral-50/50 perfectly
     }
   }, [darkMode]);
 
@@ -233,6 +276,18 @@ export default function App() {
     );
   }
 
+  // If the app is locked, present the LockScreen overlay
+  if (isLocked) {
+    return (
+      <LockScreen
+        activeUser={activeUser}
+        onUnlock={() => setIsLocked(false)}
+        darkMode={darkMode}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   // Sidebar link maps
   const navTabs = [
     { id: 'dashboard', label: 'Command Hub', icon: LayoutDashboard },
@@ -246,7 +301,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen font-sans flex transition-colors duration-250 ${
-      darkMode ? 'bg-neutral-950 text-neutral-100' : 'bg-neutral-50/50 text-neutral-900'
+      darkMode ? 'bg-neutral-950 text-neutral-100' : 'bg-neutral-50 text-neutral-900'
     }`}>
       {/* SIDEBAR NAVIGATION RAIL - DESKTOP VIEW */}
       <aside className={`fixed inset-y-0 left-0 z-40 hidden w-64 border-r flex-col justify-between transition-colors duration-250 md:flex ${
@@ -316,20 +371,46 @@ export default function App() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-center">
+          <div className="space-y-1 px-2">
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-neutral-400 font-mono">Auto-Lock Timer</label>
+            <select
+              value={autoLockMinutes}
+              onChange={(e) => {
+                const mins = Number(e.target.value);
+                setAutoLockMinutes(mins);
+                localStorage.setItem('kallon_autolock', String(mins));
+              }}
+              className="w-full rounded-lg border py-1 px-2 text-xs bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
+            >
+              <option value="0">Disabled</option>
+              <option value="1">1 Min</option>
+              <option value="5">5 Mins</option>
+              <option value="15">15 Mins</option>
+              <option value="30">30 Mins</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center">
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="flex items-center justify-center rounded-xl border p-2 text-neutral-400 hover:text-neutral-600 dark:border-neutral-800 dark:hover:text-neutral-200 cursor-pointer"
               title="Toggle Dark Mode"
             >
-              {darkMode ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4" />}
+              {darkMode ? <Sun className="h-4.5 w-4.5 text-amber-500" /> : <Moon className="h-4.5 w-4.5" />}
+            </button>
+            <button
+              onClick={() => setIsLocked(true)}
+              className="flex items-center justify-center rounded-xl border p-2 text-amber-550 border-amber-500/20 text-amber-550 dark:border-neutral-800 dark:text-amber-400 hover:bg-amber-500/5 cursor-pointer"
+              title="Lock Session"
+            >
+              <Lock className="h-4.5 w-4.5" />
             </button>
             <button
               onClick={() => setShowLogoutConfirm(true)}
-              className="flex items-center justify-center rounded-xl border border-rose-200 p-2 text-rose-500 hover:bg-rose-50 dark:border-neutral-800 dark:hover:bg-rose-950/20 cursor-pointer"
+              className="flex items-center justify-center rounded-xl border border-rose-205 p-2 text-rose-500 hover:bg-rose-50 dark:border-neutral-800 dark:hover:bg-rose-950/20 cursor-pointer"
               title="End Secure Session"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-4.5 w-4.5" />
             </button>
           </div>
         </div>
@@ -428,13 +509,44 @@ export default function App() {
                 </select>
               </div>
 
-              <button
-                onClick={() => setShowLogoutConfirm(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-100 px-4 py-3 text-sm font-semibold text-rose-500 hover:bg-rose-50/50 cursor-pointer"
-              >
-                <LogOut className="h-4.5 w-4.5" />
-                End Session
-              </button>
+              <div className="space-y-1">
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-neutral-400 font-mono">Auto-Lock Timer</label>
+                <select
+                  value={autoLockMinutes}
+                  onChange={(e) => {
+                    const mins = Number(e.target.value);
+                    setAutoLockMinutes(mins);
+                    localStorage.setItem('kallon_autolock', String(mins));
+                  }}
+                  className="w-full rounded-lg border py-2 px-2.5 text-xs bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
+                >
+                  <option value="0">Disabled</option>
+                  <option value="1">1 Min</option>
+                  <option value="5">5 Mins</option>
+                  <option value="15">15 Mins</option>
+                  <option value="30">30 Mins</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setIsLocked(true);
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-200/60 dark:border-neutral-800 px-3 py-2.5 text-xs font-semibold text-amber-600 hover:bg-amber-500/5 cursor-pointer animate-fade-in"
+                >
+                  <Lock className="h-4 w-4" />
+                  Lock App
+                </button>
+                <button
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 dark:border-neutral-800 px-3 py-2.5 text-xs font-semibold text-rose-500 hover:bg-rose-50/50 cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </div>
             </div>
           </aside>
         </div>
@@ -508,11 +620,18 @@ export default function App() {
             />
           )}
         </div>
+
+        {/* Elegant Footer Note */}
+        <footer className="py-6 text-center border-t border-neutral-100 dark:border-neutral-900 mt-auto" id="kallon-app-footer">
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 font-medium tracking-wide">
+            App designed by <span className="text-neutral-600 dark:text-neutral-300 font-semibold">Ubamadu Possible</span>
+          </p>
+        </footer>
       </main>
 
       {/* BEAUTIFUL CUSTOM LOGOUT CONFIRMATION MODAL */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in" id="logout-confirmation-modal">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-fade-in md:pl-64" id="logout-confirmation-modal">
           <div className={`w-full max-w-sm rounded-2xl border p-6 shadow-xl animate-scale-in ${
             darkMode ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-neutral-200 text-neutral-900'
           }`}>

@@ -134,8 +134,8 @@ service cloud.firestore {
 
     // DIRECT SUPPORT MESSAGES COLLECTION
     match /support_messages/{messageId} {
-      allow get: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid) && isValidId(messageId);
-      allow list: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(messageId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidId(messageId) && isValidSupportMessage(request.resource.data);
       allow update, delete: if false;
     }

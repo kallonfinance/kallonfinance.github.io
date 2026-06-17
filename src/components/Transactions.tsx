@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { dbService } from '../db';
 import { Category, Transaction, CategoryType, TransactionFilters } from '../types';
 import { Search, Filter, Plus, Edit2, Trash2, Calendar, FileText, ArrowUpRight, ArrowDownLeft, SlidersHorizontal, ChevronLeft, ChevronRight, Download, RefreshCw, X, Check } from 'lucide-react';
+import { CustomDatePicker } from './CustomDatePicker';
 
 interface TransactionsProps {
   userId: string;
@@ -326,22 +327,22 @@ export function Transactions({ userId, darkMode, onTransactionsChanged, categori
             {/* Date From */}
             <div>
               <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1">From Date</label>
-              <input
-                type="date"
+              <CustomDatePicker
                 value={filters.dateFrom}
-                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-                className="w-full rounded-xl border py-1.5 px-3 text-sm bg-white dark:bg-neutral-950 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                onChange={(date) => setFilters({ ...filters, dateFrom: date })}
+                placeholder="From date"
+                darkMode={darkMode}
               />
             </div>
 
             {/* Date To */}
             <div>
               <label className="block text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1">To Date</label>
-              <input
-                type="date"
+              <CustomDatePicker
                 value={filters.dateTo}
-                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-                className="w-full rounded-xl border py-1.5 px-3 text-sm bg-white dark:bg-neutral-950 dark:border-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                onChange={(date) => setFilters({ ...filters, dateTo: date })}
+                placeholder="To date"
+                darkMode={darkMode}
               />
             </div>
 
@@ -365,8 +366,8 @@ export function Transactions({ userId, darkMode, onTransactionsChanged, categori
 
       {/* RE-USABLE MODAL PRE-BUILT FORM */}
       {showAddForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-fade-in">
-          <div className={`w-full max-w-md rounded-3xl border p-6 shadow-xl ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'}`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-fade-in md:pl-64">
+          <div className={`w-full max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar rounded-3xl border p-6 shadow-xl ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'}`}>
             <div className="flex items-center justify-between border-b pb-3 mb-4 border-neutral-100 dark:border-neutral-800">
               <h2 className="text-lg font-bold">
                 {editingTx ? 'Edit Transaction' : 'Record Transaction'}
@@ -444,15 +445,12 @@ export function Transactions({ userId, darkMode, onTransactionsChanged, categori
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-400">Date</label>
-                <div className="relative mt-1">
-                  <Calendar className="absolute top-3 left-3 h-4.5 w-4.5 text-neutral-400" />
-                  <input
-                    id="transaction-date-input"
-                    type="date"
-                    required
+                <div className="mt-1">
+                  <CustomDatePicker
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full rounded-xl border py-2.5 pl-10 pr-4 text-sm bg-white text-neutral-900 dark:bg-neutral-950 dark:text-white dark:border-neutral-800 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    onChange={(selectedDate) => setDate(selectedDate)}
+                    placeholder="Choose date"
+                    darkMode={darkMode}
                   />
                 </div>
               </div>
@@ -495,7 +493,8 @@ export function Transactions({ userId, darkMode, onTransactionsChanged, categori
 
       {/* TABLE DATA LIST CARD */}
       <div className={`overflow-hidden rounded-2xl border ${darkMode ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'}`}>
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr className={`border-b text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:border-neutral-800 ${
@@ -579,6 +578,59 @@ export function Transactions({ userId, darkMode, onTransactionsChanged, categori
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile List Card View */}
+        <div className="block md:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+          {paginatedTransactions.map((tx) => {
+            const cat = categories.find((c) => c.id === tx.categoryId);
+            return (
+              <div key={tx.id} className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide ${
+                    tx.transactionType === 'income'
+                      ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
+                      : 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-450'
+                  }`}>
+                    {tx.transactionType === 'income' ? 'Income' : 'Expense'}
+                  </span>
+                  <span className="font-mono text-[11px] text-neutral-400 font-medium">{tx.transactionDate}</span>
+                </div>
+                
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-neutral-800 dark:text-neutral-200 text-xs truncate">{tx.description}</h4>
+                    <p className="text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 mt-0.5">{cat ? cat.name : 'Uncategorized'}</p>
+                  </div>
+                  <span className={`font-mono text-xs font-bold shrink-0 ${
+                    tx.transactionType === 'income' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                  }`}>
+                    {tx.transactionType === 'income' ? '+' : '-'}{currencySymbol}{tx.amount.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2 border-t border-dashed border-neutral-100 dark:border-neutral-800">
+                  <button
+                    onClick={() => handleEditClick(tx)}
+                    className="p-1 px-2.5 text-neutral-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg dark:hover:bg-indigo-950/30 transition text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" /> Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(tx)}
+                    className="p-1 px-2.5 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg dark:hover:bg-rose-950/30 transition text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {filteredTransactions.length === 0 && (
+            <div className="py-12 text-center text-xs text-neutral-400 dark:text-neutral-500">
+              No transactions found matching your criteria. Click "Add Transaction" to record your first entry.
+            </div>
+          )}
         </div>
 
         {/* PAGINATION PANEL */}

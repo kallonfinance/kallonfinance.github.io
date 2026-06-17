@@ -540,12 +540,6 @@ export function Auth({ onAuthSuccess, darkMode }: AuthProps) {
             </form>
           )}
         </div>
-
-        {/* Outer instructions for cloud readiness */}
-        <div className="mt-6 text-center text-[10px] text-neutral-400 dark:text-neutral-500 font-mono space-y-1">
-          <p className="font-semibold text-neutral-500 dark:text-neutral-400">🚀 Fully Connected to Firebase Cloud Services</p>
-          <span className="opacity-80 block">All categories, income credits, expense logs & budget targets securely synced</span>
-        </div>
       </div>
     </div>
   );

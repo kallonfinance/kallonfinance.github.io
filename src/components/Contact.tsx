@@ -42,11 +42,17 @@ export function Contact({ userId, darkMode }: ContactProps) {
   // Load Past Tickets
   useEffect(() => {
     async function loadTickets() {
+      const currentUid = auth.currentUser?.uid;
+      // Guard against cases where auth hasn't loaded or mismatch exists
+      if (!currentUid || userId !== currentUid) {
+        console.warn("Contact component: Not logged in or userId mismatch. Skipping fetch.");
+        return;
+      }
       setIsLoadingTickets(true);
       try {
         const q = query(
           collection(db, 'support_messages'), 
-          where('userId', '==', userId)
+          where('userId', '==', currentUid)
         );
         const snap = await getDocs(q);
         const records: SupportMessage[] = [];
