@@ -67,15 +67,6 @@ service cloud.firestore {
           && g.createdAt is string && g.createdAt.size() <= 64;
     }
 
-    function isValidSupportMessage(m) {
-      return m.id is string && m.id.size() <= 128
-          && m.userId == request.auth.uid
-          && m.category is string && m.category.size() <= 128
-          && m.subject is string && m.subject.size() <= 256
-          && m.message is string && m.message.size() <= 2048
-          && m.createdAt is string && m.createdAt.size() <= 64;
-    }
-
     // ==========================================
     // GLOBAL SAFETY NET (DEFAULT DENY)
     // ==========================================
@@ -93,13 +84,12 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidUser(request.resource.data);
       allow update: if isOwner(userId) && isValidUser(request.resource.data);
       allow delete: if false;
-      // REMOVED: "allow list" rule to prevent data-harvesting of your user directory.
     }
 
     // CATEGORIES COLLECTION
     match /categories/{categoryId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(categoryId);
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && request.query.limit <= 500 && request.query.offset == 0; 
       allow create: if isSignedIn() && isValidId(categoryId) && isValidCategory(request.resource.data);
       allow update: if isSignedIn() && isValidId(categoryId) && resource.data.userId == request.auth.uid && isValidCategory(request.resource.data);
       allow delete: if isSignedIn() && isValidId(categoryId) && resource.data.userId == request.auth.uid;
@@ -108,7 +98,7 @@ service cloud.firestore {
     // TRANSACTIONS COLLECTION
     match /transactions/{transactionId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(transactionId);
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && request.query.limit <= 500 && request.query.offset == 0;
       allow create: if isSignedIn() && isValidId(transactionId) && isValidTransaction(request.resource.data);
       allow update: if isSignedIn() && isValidId(transactionId) && resource.data.userId == request.auth.uid && isValidTransaction(request.resource.data);
       allow delete: if isSignedIn() && isValidId(transactionId) && resource.data.userId == request.auth.uid;
@@ -117,7 +107,7 @@ service cloud.firestore {
     // BUDGETS COLLECTION
     match /budgets/{budgetId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(budgetId);
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && request.query.limit <= 500 && request.query.offset == 0;
       allow create: if isSignedIn() && isValidId(budgetId) && isValidBudget(request.resource.data);
       allow update: if isSignedIn() && isValidId(budgetId) && resource.data.userId == request.auth.uid && isValidBudget(request.resource.data);
       allow delete: if isSignedIn() && isValidId(budgetId) && resource.data.userId == request.auth.uid;
@@ -126,18 +116,10 @@ service cloud.firestore {
     // SAVINGS COLLECTION
     match /savings/{savingsId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(savingsId);
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && request.query.limit <= 500 && request.query.offset == 0;
       allow create: if isSignedIn() && isValidId(savingsId) && isValidSavingsGoal(request.resource.data);
       allow update: if isSignedIn() && isValidId(savingsId) && resource.data.userId == request.auth.uid && isValidSavingsGoal(request.resource.data);
       allow delete: if isSignedIn() && isSignedIn() && resource.data.userId == request.auth.uid;
-    }
-
-    // DIRECT SUPPORT MESSAGES COLLECTION
-    match /support_messages/{messageId} {
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(messageId);
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(messageId) && isValidSupportMessage(request.resource.data);
-      allow update, delete: if false;
     }
   }
 }
