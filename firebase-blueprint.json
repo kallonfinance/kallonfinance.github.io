@@ -37,12 +37,12 @@
         "categoryId": { "type": "string" },
         "categoryName": { "type": "string" },
         "amount": { "type": "number" },
-        "date": { "type": "string", "description": "Format YYYY-MM-DD" },
+        "transactionDate": { "type": "string", "description": "Format YYYY-MM-DD" },
         "description": { "type": "string" },
         "transactionType": { "type": "string", "enum": ["income", "expense"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "userId", "categoryId", "amount", "date", "description", "transactionType", "createdAt"]
+      "required": ["id", "userId", "categoryId", "amount", "transactionDate", "description", "transactionType", "createdAt"]
     },
     "Budget": {
       "title": "Budget",
@@ -64,28 +64,14 @@
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string" },
-        "name": { "type": "string" },
+        "goalName": { "type": "string" },
         "targetAmount": { "type": "number" },
         "currentAmount": { "type": "number" },
         "categoryId": { "type": "string" },
-        "deadline": { "type": "string" },
+        "targetDate": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "userId", "name", "targetAmount", "currentAmount", "createdAt"]
-    },
-    "SupportMessage": {
-      "title": "SupportMessage",
-      "description": "Customer support or inquiry tickets filled by user",
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "category": { "type": "string" },
-        "subject": { "type": "string" },
-        "message": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "userId", "category", "subject", "message", "createdAt"]
+      "required": ["id", "userId", "goalName", "targetAmount", "currentAmount", "createdAt"]
     }
   },
   "firestore": {
@@ -108,10 +94,6 @@
     "/savings/{savingsId}": {
       "schema": "SavingsGoal",
       "description": "Secure goals to track user savings progress"
-    },
-    "/support_messages/{messageId}": {
-      "schema": "SupportMessage",
-      "description": "Interactive customer support or inquiry tickets filled by user"
     }
   }
 }

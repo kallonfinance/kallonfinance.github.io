@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { dbService, generateId } from '../db';
-import { db, handleFirestoreError, OperationType, auth } from '../firebase';
+import { auth } from '../firebase';
 import { SupportMessage } from '../types';
-import { collection, doc, getDocs, setDoc, query, where } from 'firebase/firestore';
 import { 
   Mail, Send, Check, Copy, HelpCircle, ChevronDown, ChevronUp, MessageSquare, ShieldCheck, Clock, Loader2 
 } from 'lucide-react';
@@ -41,7 +40,7 @@ export function Contact({ userId, darkMode }: ContactProps) {
 
   // Load Past Tickets
   useEffect(() => {
-    async function loadTickets() {
+    function loadTickets() {
       const currentUid = auth.currentUser?.uid;
       // Guard against cases where auth hasn't loaded or mismatch exists
       if (!currentUid || userId !== currentUid) {
@@ -50,34 +49,14 @@ export function Contact({ userId, darkMode }: ContactProps) {
       }
       setIsLoadingTickets(true);
       try {
-        const q = query(
-          collection(db, 'support_messages'), 
-          where('userId', '==', currentUid)
-        );
-        const snap = await getDocs(q);
-        const records: SupportMessage[] = [];
-        snap.forEach(docSnap => {
-          records.push(docSnap.data() as SupportMessage);
-        });
-        
-        // Sort by date desc
-        records.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setAllTickets(records);
-        
-        // Cache to local
-        localStorage.setItem(`kallon_support_${userId}`, JSON.stringify(records));
-      } catch (err: any) {
-        console.warn("Error checking cloud support tickets:", err);
         const cached = localStorage.getItem(`kallon_support_${userId}`);
         if (cached) {
           try {
             setAllTickets(JSON.parse(cached));
           } catch {}
         }
-        // Properly catch and throw Firestore error details to the system if permission error
-        if (err?.message?.includes('permission') || err?.code === 'permission-denied') {
-          handleFirestoreError(err, OperationType.LIST, 'support_messages');
-        }
+      } catch (err) {
+        console.warn("Error reading cached local tickets:", err);
       } finally {
         setIsLoadingTickets(false);
       }
@@ -111,56 +90,20 @@ export function Contact({ userId, darkMode }: ContactProps) {
       createdAt: new Date().toISOString()
     };
 
-    try {
-      // 1. Save to Firestore
-      await setDoc(doc(db, 'support_messages', ticketId), newTicket);
+    // Save locally under account support history
+    const updated = [newTicket, ...allTickets];
+    setAllTickets(updated);
+    localStorage.setItem(`kallon_support_${userId}`, JSON.stringify(updated));
 
-      // 2. Append to state and cache
-      const updated = [newTicket, ...allTickets];
-      setAllTickets(updated);
-      localStorage.setItem(`kallon_support_${userId}`, JSON.stringify(updated));
-
-      // Capture submitted ticket value before resetting form
-      setSubmittedTicket(newTicket);
-      setSubject('');
-      setMessage('');
-      setStatusMsg({ text: 'Ticket successfully submitted! Our support team will respond shortly.', type: 'success' });
-    } catch (err: any) {
-      console.error("Error sending support ticket:", err);
-      
-      // Fallback local save so the user is never stuck or stranded
-      const updated = [newTicket, ...allTickets];
-      setAllTickets(updated);
-      localStorage.setItem(`kallon_support_${userId}`, JSON.stringify(updated));
-      
-      setSubmittedTicket(newTicket);
-      setSubject('');
-      setMessage('');
-      
-      if (err?.id?.includes('permission') || err?.message?.includes('permission') || err?.code === 'permission-denied') {
-        setStatusMsg({ 
-          text: 'Ticket registered under your account history. Feel free to use the Gmail or Mail App dispatch buttons below to confirm delivery.', 
-          type: 'success' 
-        });
-        
-        // Log to diagnostics in a non-blocking background thread
-        setTimeout(() => {
-          try {
-            console.warn('Logging rule validation diagnostics...');
-            handleFirestoreError(err, OperationType.CREATE, 'support_messages/' + ticketId);
-          } catch (diagnosticsError) {
-            console.log('Background diagnostics finished:', diagnosticsError);
-          }
-        }, 50);
-      } else {
-        setStatusMsg({ 
-          text: 'Submitted locally! Active network firewall detected, offline mode engaged. We will synchronize with the server continuously.', 
-          type: 'success' 
-        });
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Capture submitted ticket value and reset form
+    setSubmittedTicket(newTicket);
+    setSubject('');
+    setMessage('');
+    setStatusMsg({ 
+      text: 'Ticket successfully logged! Use the Gmail or Mail App buttons below to easily dispatch this pre-filled ticket to our support team.', 
+      type: 'success' 
+    });
+    setIsSubmitting(false);
   };
 
   const faqs = [

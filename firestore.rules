@@ -42,7 +42,7 @@ service cloud.firestore {
           && tx.categoryId is string && tx.categoryId.size() <= 128
           && (!('categoryName' in tx) || tx.categoryName == null || (tx.categoryName is string && tx.categoryName.size() <= 128))
           && (tx.amount is int || tx.amount is float)
-          && tx.date is string && tx.date.size() <= 32
+          && tx.transactionDate is string && tx.transactionDate.size() <= 32
           && tx.description is string && tx.description.size() <= 256
           && tx.transactionType is string && (tx.transactionType == 'income' || tx.transactionType == 'expense')
           && tx.createdAt is string && tx.createdAt.size() <= 64;
@@ -59,11 +59,11 @@ service cloud.firestore {
     function isValidSavingsGoal(g) {
       return g.id is string && g.id.size() <= 128
           && g.userId == request.auth.uid
-          && g.name is string && g.name.size() <= 128
+          && g.goalName is string && g.goalName.size() <= 128
           && (g.targetAmount is int || g.targetAmount is float)
           && (g.currentAmount is int || g.currentAmount is float)
           && (!('categoryId' in g) || g.categoryId == null || (g.categoryId is string && g.categoryId.size() <= 128))
-          && (!('deadline' in g) || g.deadline == null || (g.deadline is string && g.deadline.size() <= 64))
+          && (!('targetDate' in g) || g.targetDate == null || (g.targetDate is string && g.targetDate.size() <= 64))
           && g.createdAt is string && g.createdAt.size() <= 64;
     }
 
@@ -89,7 +89,7 @@ service cloud.firestore {
     // CATEGORIES COLLECTION
     match /categories/{categoryId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(categoryId);
-      allow list: if isSignedIn() && request.query.limit <= 500 && request.query.offset == 0; 
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid && request.query.limit <= 500; 
       allow create: if isSignedIn() && isValidId(categoryId) && isValidCategory(request.resource.data);
       allow update: if isSignedIn() && isValidId(categoryId) && resource.data.userId == request.auth.uid && isValidCategory(request.resource.data);
       allow delete: if isSignedIn() && isValidId(categoryId) && resource.data.userId == request.auth.uid;
@@ -98,7 +98,7 @@ service cloud.firestore {
     // TRANSACTIONS COLLECTION
     match /transactions/{transactionId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(transactionId);
-      allow list: if isSignedIn() && request.query.limit <= 500 && request.query.offset == 0;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid && request.query.limit <= 500;
       allow create: if isSignedIn() && isValidId(transactionId) && isValidTransaction(request.resource.data);
       allow update: if isSignedIn() && isValidId(transactionId) && resource.data.userId == request.auth.uid && isValidTransaction(request.resource.data);
       allow delete: if isSignedIn() && isValidId(transactionId) && resource.data.userId == request.auth.uid;
@@ -107,7 +107,7 @@ service cloud.firestore {
     // BUDGETS COLLECTION
     match /budgets/{budgetId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(budgetId);
-      allow list: if isSignedIn() && request.query.limit <= 500 && request.query.offset == 0;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid && request.query.limit <= 500;
       allow create: if isSignedIn() && isValidId(budgetId) && isValidBudget(request.resource.data);
       allow update: if isSignedIn() && isValidId(budgetId) && resource.data.userId == request.auth.uid && isValidBudget(request.resource.data);
       allow delete: if isSignedIn() && isValidId(budgetId) && resource.data.userId == request.auth.uid;
@@ -116,7 +116,7 @@ service cloud.firestore {
     // SAVINGS COLLECTION
     match /savings/{savingsId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid && isValidId(savingsId);
-      allow list: if isSignedIn() && request.query.limit <= 500 && request.query.offset == 0;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid && request.query.limit <= 500;
       allow create: if isSignedIn() && isValidId(savingsId) && isValidSavingsGoal(request.resource.data);
       allow update: if isSignedIn() && isValidId(savingsId) && resource.data.userId == request.auth.uid && isValidSavingsGoal(request.resource.data);
       allow delete: if isSignedIn() && isSignedIn() && resource.data.userId == request.auth.uid;
